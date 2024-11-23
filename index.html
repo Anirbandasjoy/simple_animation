@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Qrinux 3D Animation with Events</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: radial-gradient(circle, #020111, #191326, #311d46);
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/loaders/FontLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/geometries/TextGeometry.js"></script>
+    <script>
+      // Scene, camera, and renderer setup
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // Add particles
+      const particleCount = 2000;
+      const particleGeometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(particleCount * 3);
+
+      for (let i = 0; i < particleCount; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 50;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
+      }
+
+      particleGeometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(positions, 3)
+      );
+
+      const particleMaterial = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.3,
+        transparent: true,
+        opacity: 0.7,
+      });
+
+      const particles = new THREE.Points(particleGeometry, particleMaterial);
+      scene.add(particles);
+
+      // Load and display 3D text
+      const fontLoader = new THREE.FontLoader();
+      let textMesh;
+
+      fontLoader.load(
+        "https://threejs.org/examples/fonts/helvetiker_regular.typeface.json",
+        (font) => {
+          const textGeometry = new THREE.TextGeometry("Qrinux", {
+            font: font,
+            size: 2,
+            height: 0.5,
+            curveSegments: 12,
+            bevelEnabled: true,
+            bevelThickness: 0.1,
+            bevelSize: 0.2,
+            bevelSegments: 5,
+          });
+
+          const textMaterial = new THREE.MeshStandardMaterial({
+            color: 0xff8800,
+            emissive: 0x550000,
+            metalness: 0.7,
+            roughness: 0.2,
+          });
+
+          textMesh = new THREE.Mesh(textGeometry, textMaterial);
+          textMesh.position.set(-6, 0, 0);
+          textMesh.castShadow = true;
+          scene.add(textMesh);
+
+          // Animate text
+          function animateText() {
+            textMesh.rotation.y += 0.01;
+            textMesh.rotation.x += 0.005;
+          }
+
+          animateTextFunc = animateText; // Pass to the global animation loop
+        }
+      );
+
+      // Add lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
+
+      const pointLight = new THREE.PointLight(0xffffff, 1.5);
+      pointLight.position.set(10, 10, 10);
+      scene.add(pointLight);
+
+      // Camera position
+      camera.position.z = 30;
+
+      // Global animation callback for text
+      let animateTextFunc = () => {};
+
+      // Mouse event listener
+      let mouseX = 0;
+      let mouseY = 0;
+
+      window.addEventListener("mousemove", (event) => {
+        mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+        mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+      });
+
+      // Device orientation (eye event)
+      window.addEventListener("deviceorientation", (event) => {
+        const gamma = event.gamma ? event.gamma : 0; // Tilt on X-axis
+        const beta = event.beta ? event.beta : 0; // Tilt on Y-axis
+
+        camera.position.x = gamma / 5;
+        camera.position.y = beta / 5;
+      });
+
+      // Click event: Change text color
+      window.addEventListener("click", () => {
+        const newColor = new THREE.Color(
+          Math.random(),
+          Math.random(),
+          Math.random()
+        );
+        textMesh.material.color.set(newColor);
+      });
+
+      // Animation loop
+      function animate() {
+        requestAnimationFrame(animate);
+
+        // Rotate particles
+        particles.rotation.y += 0.002;
+
+        // Animate text
+        animateTextFunc();
+
+        // Camera follows mouse movements for dynamic perspective
+        camera.position.x += (mouseX - camera.position.x) * 0.05;
+        camera.position.y += (-mouseY - camera.position.y) * 0.05;
+        camera.lookAt(scene.position);
+
+        // Render scene
+        renderer.render(scene, camera);
+      }
+
+      // Handle window resizing
+      window.addEventListener("resize", () => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+      });
+
+      animate();
+    </script>
+  </body>
+</html>
